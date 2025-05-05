@@ -1,0 +1,58 @@
+import tensorflow as tf
+import tensorflow_datasets as tfds
+import matplotlib.pyplot as plt
+
+# Config
+IMG_SIZE = (128, 128)
+BATCH_SIZE = 32
+EPOCHS = 5
+
+# Load & preprocess data
+def preprocess(img, label):
+    img = tf.image.resize(img, IMG_SIZE) / 255.0
+    return img, label
+
+(ds_train, ds_test), _ = tfds.load('beans', split=['train[:80%]', 'train[80%:]'],
+                                   as_supervised=True, with_info=True)
+
+ds_train = ds_train.map(preprocess).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+ds_test = ds_test.map(preprocess).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+
+# Model
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, 3, activation='relu', input_shape=(128, 128, 3)),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Conv2D(64, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense(3, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+history = model.fit(ds_train, epochs=EPOCHS, validation_data=ds_test)
+
+# Evaluation
+test_loss, test_acc = model.evaluate(ds_test)
+print(f"Test Accuracy: {test_acc * 100:.2f}%")
+
+# Plot
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title('Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Loss
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train')
+plt.plot(history.history['val_loss'], label='Val')
+plt.title('Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid(True)
