@@ -1,0 +1,34 @@
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Load the dataset
+df = pd.read_csv('/content/USA_Housing.csv')
+
+# Drop the 'Address' column and scale the features
+df = df.drop('Address', axis=1)
+X_scaled = StandardScaler().fit_transform(df)
+
+# Apply KMeans with a fixed number of clusters (e.g., 3)
+kmeans = KMeans(n_clusters=3, random_state=42)
+df['Cluster'] = kmeans.fit_predict(X_scaled)
+
+# Reduce dimensionality for visualization using PCA
+pca = PCA(n_components=2)
+pca_components = pca.fit_transform(X_scaled)
+df['PCA1'], df['PCA2'] = pca_components[:, 0], pca_components[:, 1]
+
+# 10. Plot the clusters
+plt.figure(figsize=(8, 6))
+sns.scatterplot(data=df, x='PCA1', y='PCA2', hue='Cluster', palette='tab10')
+plt.title('K-Means Clusters (Visualized with PCA)')
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.legend(title='Cluster')
+plt.show()
+
+# Optional: View cluster-wise statistics
+print(df.groupby('Cluster').mean())
